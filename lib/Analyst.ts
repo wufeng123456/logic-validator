@@ -8,7 +8,19 @@ import {
 } from "./Token";
 import UnknowTokenException from "./exception/UnknowTokenException";
 import NotAllowPositionException from "./exception/NotAllowpositionException";
+import ContextNotEndException from "./exception/ContextNotEndException";
+import NotAllowEndException from "./exception/NotAllowEndException";
 
+const allowBeginType = [
+    TOKE_TYPE_NUMBER,
+    TOKE_TYPE_LEFT_BRACKET
+]
+const allowBeginSymbol = [
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '('
+]
+const allowEndSymbol = [
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', ')'
+]
 const ruleTypeMap = {
     [TOKE_TYPE_LEFT_BRACKET]: [
         TOKE_TYPE_NUMBER,
@@ -22,11 +34,11 @@ const ruleTypeMap = {
         TOKE_TYPE_NUMBER,
         TOKE_TYPE_LEFT_BRACKET
     ],
-    [TOKE_TYPE_RIGHT_BRACKET]:[
+    [TOKE_TYPE_RIGHT_BRACKET]: [
         TOKE_TYPE_OPERATOR,
         TOKE_TYPE_RIGHT_BRACKET
     ],
-    [TOKEN_TYPE_CONTEXT]:[
+    [TOKEN_TYPE_CONTEXT]: [
         TOKE_TYPE_OPERATOR,
         TOKE_TYPE_RIGHT_BRACKET
     ]
@@ -45,25 +57,23 @@ const ruleSymbolMap = {
 
 
 class Analyst {
-    serializedTokens: Token[]
+    serializedTokens: Token[] = []
 
     constructor(serializedTokens: Token[]) {
         this.serializedTokens = serializedTokens.reverse()
     }
 
-    analyse() {
-        const analyzedToken = []
+    analyse(isContext = false) {
+        const analyzedToken:Token[]=[]
         while (this.serializedTokens.length) {
             const token = this.serializedTokens.pop()
             if (!analyzedToken.length) {
-
                 // @ts-ignore
-                if (!Object.keys(ruleTypeMap).includes(token.type)) {
-                    throw new NotAllowPositionException(token, Object.keys(ruleTypeMap))
+                if (!allowBeginType.includes(token.type)) {
+                    throw new NotAllowPositionException(token, allowBeginSymbol)
                 }
             } else {
                 const preTokenType = analyzedToken[analyzedToken.length - 1].type
-                console.log(preTokenType,ruleTypeMap[preTokenType])
                 if (!ruleTypeMap[preTokenType].includes(token.type)) {
                     throw new NotAllowPositionException(token, ruleSymbolMap[preTokenType])
                 }
@@ -92,63 +102,54 @@ class Analyst {
                 continue
             }
             if (token.type === TOKE_TYPE_OPERATOR) {
-
                 analyzedToken.push(token)
                 continue
             }
 
             if (token.type === TOKE_TYPE_LEFT_BRACKET) {
                 const contextToken = new ContextToken()
-                contextToken.children = this.analyse()
+                contextToken.children = this.analyse(true)
                 analyzedToken.push(contextToken)
                 continue
             }
 
             if (token.type === TOKE_TYPE_RIGHT_BRACKET) {
-                break
+                return analyzedToken
             }
             throw new UnknowTokenException(token)
+        }
+        if (isContext) {
+            throw new ContextNotEndException()
         }
         return analyzedToken
     }
 
-    private getOperator() {
+    private getNext(type: string) {
         let token = this.serializedTokens.pop()
-        if (token.type === TOKE_TYPE_OPERATOR) {
+        if (!token) {
+            throw  new NotAllowEndException(allowEndSymbol)
+        }
+        if (token.type === type) {
             return token
         }
         this.serializedTokens.push(token)
         throw new NotAllowPositionException(token, ruleSymbolMap[token.type])
+    }
+
+    private getOperator() {
+         return this.getNext(TOKE_TYPE_OPERATOR)
     }
 
     private getNumber() {
-        let token = this.serializedTokens.pop()
-        if (token.type === TOKE_TYPE_NUMBER) {
-            return token
-        }
-        this.serializedTokens.push(token)
-
-        throw new NotAllowPositionException(token, ruleSymbolMap[token.type])
+        return this.getNext(TOKE_TYPE_NUMBER)
     }
 
     private getRightBracket() {
-        let token = this.serializedTokens.pop()
-        if (token.type === TOKE_TYPE_RIGHT_BRACKET) {
-            return token
-        }
-        this.serializedTokens.push(token)
-
-        throw new NotAllowPositionException(token, ruleSymbolMap[token.type])
+        return this.getNext(TOKE_TYPE_RIGHT_BRACKET)
     }
 
     private getLeftBracket() {
-        let token = this.serializedTokens.pop()
-        if (token.type === TOKE_TYPE_LEFT_BRACKET) {
-            return token
-        }
-        this.serializedTokens.push(token)
-
-        throw new NotAllowPositionException(token, ruleSymbolMap[token.type])
+        return this.getNext(TOKE_TYPE_LEFT_BRACKET)
     }
 }
 
