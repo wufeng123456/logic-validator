@@ -1,6 +1,6 @@
 {
   "name": "@followwinter/logic-validator",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "jest",
-    "build": " npx rollup -c"
+    "build": " npx rollup -c",
+    "publish": "git push --follow-tags origin master && npm publish --access=public"
   },
   "keywords": [],
   "author": "",
