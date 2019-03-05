@@ -82,8 +82,7 @@ class Analyst {
             if (token.type === TOKE_TYPE_NUMBER) {
                 analyzedToken.push(token)
                 try {
-                    analyzedToken.push(this.getOperator())
-                    analyzedToken.push(this.getNumber())
+                    analyzedToken.push(this.getOperator())&& analyzedToken.push(this.getNumber())
                 } catch (e) {
                     if (!(e instanceof NotAllowPositionException)) {
                         throw e
@@ -127,7 +126,7 @@ class Analyst {
     private getNext(type: string) {
         let token = this.serializedTokens.pop()
         if (!token) {
-            throw  new NotAllowEndException(allowEndSymbol)
+            return
         }
         if (token.type === type) {
             return token

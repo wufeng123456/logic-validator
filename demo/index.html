@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>逻辑表达式校验栗子</title>
+    <script src="./../dist/lv.bundle.js"></script>
+</head>
+<body>
+<input type="text" oninput="handleInput(event)">
+<p id="error"></p>
+</body>
+<script>
+    function handleInput(e) {
+        try {
+            new LV.Analyst(new LV.Tokenizer().tokenize(e.target.value)).analyse()
+            document.getElementById('error').textContent='正确'
+        }catch (e) {
+            document.getElementById('error').textContent=e.message
+        }
+    }
+</script>
+</html>

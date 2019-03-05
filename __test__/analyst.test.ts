@@ -157,7 +157,13 @@ describe('analyst',()=>{
         const analyst = new Analyst(tokenize.tokenize('(1'))
         expect(()=>{
             analyst.analyse()
-        }).toThrowError('不能以该符号结束，允许的结束符号是: [1,2,3,4,5,6,7,8,9,0,)]')
+        }).toThrowError('上下文错误，请检查 ( ) 是否匹配')
+    })
+
+    test('single end',()=>{
+        const tokenize = new Tokenizer()
+        const analyst = new Analyst(tokenize.tokenize('1'))
+        analyst.analyse()
     })
 
     test('error context end',()=>{
