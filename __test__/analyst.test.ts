@@ -11,13 +11,13 @@ describe('analyst',()=>{
 
     test('empty input', () => {
         const tokenize = new Tokenizer()
-        const analyst = new Analyst(tokenize.tokenize(''))
-        expect(analyst.analyse()).toEqual([])
+        const analyst = new Analyst()
+        expect(analyst.analyse(tokenize.tokenize(''))).toEqual([])
     })
     test('normal input', () => {
         const tokenize = new Tokenizer()
-        const analyst = new Analyst(tokenize.tokenize('(11|22)&(33|44)'))
-        expect(analyst.analyse()).toEqual([
+        const analyst = new Analyst()
+        expect(analyst.analyse(tokenize.tokenize('(11|22)&(33|44)'))).toEqual([
             {
                 _type: TOKEN_TYPE_CONTEXT,
                 _value: '',
@@ -76,8 +76,8 @@ describe('analyst',()=>{
     })
     test('recursion context', () => {
         const tokenize = new Tokenizer()
-        const analyst = new Analyst(tokenize.tokenize('1&(2&(3&4))'))
-        expect(analyst.analyse()).toEqual([
+        const analyst = new Analyst()
+        expect(analyst.analyse(tokenize.tokenize('1&(2&(3&4))'))).toEqual([
             {
                 _type: TOKE_TYPE_NUMBER,
                 _value: '1',
@@ -139,38 +139,38 @@ describe('analyst',()=>{
 
     test('error input order',()=>{
         const tokenize = new Tokenizer()
-        const analyst = new Analyst(tokenize.tokenize('1&&'))
+        const analyst = new Analyst()
         expect(()=>{
-            analyst.analyse()
+            analyst.analyse(tokenize.tokenize('1&&'))
         })
             .toThrowError('[3,3]: 该符号不允许出现在这儿: &，允许的符号是: [1,2,3,4,5,6,7,8,9,0]')
     })
     test('error input begin',()=>{
         const tokenize = new Tokenizer()
-        const analyst = new Analyst(tokenize.tokenize('&'))
+        const analyst = new Analyst()
         expect(()=>{
-            analyst.analyse()
+            analyst.analyse(tokenize.tokenize('&'))
         }).toThrowError('[1,1]: 该符号不允许出现在这儿: &，允许的符号是: [1,2,3,4,5,6,7,8,9,0,(]')
     })
     test('error input end',()=>{
         const tokenize = new Tokenizer()
-        const analyst = new Analyst(tokenize.tokenize('(1'))
+        const analyst = new Analyst()
         expect(()=>{
-            analyst.analyse()
+            analyst.analyse(tokenize.tokenize('(1'))
         }).toThrowError('上下文错误，请检查 ( ) 是否匹配')
     })
 
     test('single end',()=>{
         const tokenize = new Tokenizer()
-        const analyst = new Analyst(tokenize.tokenize('1'))
-        analyst.analyse()
+        const analyst = new Analyst()
+        analyst.analyse(tokenize.tokenize('1'))
     })
 
     test('error context end',()=>{
         const tokenize = new Tokenizer()
-        const analyst = new Analyst(tokenize.tokenize('(1|1'))
+        const analyst = new Analyst()
         expect(()=>{
-            analyst.analyse()
+            analyst.analyse(tokenize.tokenize('(1|1'))
         }).toThrowError('上下文错误，请检查 ( ) 是否匹配')
     })
 })

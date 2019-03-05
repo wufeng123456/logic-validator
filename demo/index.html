@@ -12,7 +12,7 @@
 <script>
     function handleInput(e) {
         try {
-            new LV.Analyst(new LV.Tokenizer().tokenize(e.target.value)).analyse()
+            new LV.Analyst().analyse(new LV.Tokenizer().tokenize(e.target.value))
             document.getElementById('error').textContent='正确'
         }catch (e) {
             document.getElementById('error').textContent=e.message

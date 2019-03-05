@@ -9,7 +9,6 @@ import {
 import UnknowTokenException from "./exception/UnknowTokenException";
 import NotAllowPositionException from "./exception/NotAllowpositionException";
 import ContextNotEndException from "./exception/ContextNotEndException";
-import NotAllowEndException from "./exception/NotAllowEndException";
 
 const allowBeginType = [
     TOKE_TYPE_NUMBER,
@@ -17,9 +16,6 @@ const allowBeginType = [
 ]
 const allowBeginSymbol = [
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '('
-]
-const allowEndSymbol = [
-    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', ')'
 ]
 const ruleTypeMap = {
     [TOKE_TYPE_LEFT_BRACKET]: [
@@ -57,14 +53,21 @@ const ruleSymbolMap = {
 
 
 class Analyst {
-    serializedTokens: Token[] = []
+    private serializedTokens: Token[] = []
+    private config: object = {}
 
-    constructor(serializedTokens: Token[]) {
-        this.serializedTokens = serializedTokens.reverse()
+    constructor(config: object = {}) {
+        this.config = config
     }
 
-    analyse(isContext = false) {
-        const analyzedToken:Token[]=[]
+    public analyse(serializedTokens: Token[]) {
+        this.serializedTokens = serializedTokens.reverse()
+        return this._analyse()
+    }
+
+    private _analyse(isContext = false) {
+        if (!this.serializedTokens.length) return []
+        const analyzedToken: Token[] = []
         while (this.serializedTokens.length) {
             const token = this.serializedTokens.pop()
             if (!analyzedToken.length) {
@@ -82,7 +85,7 @@ class Analyst {
             if (token.type === TOKE_TYPE_NUMBER) {
                 analyzedToken.push(token)
                 try {
-                    analyzedToken.push(this.getOperator())&& analyzedToken.push(this.getNumber())
+                    analyzedToken.push(this.getOperator()) && analyzedToken.push(this.getNumber())
                 } catch (e) {
                     if (!(e instanceof NotAllowPositionException)) {
                         throw e
@@ -107,7 +110,7 @@ class Analyst {
 
             if (token.type === TOKE_TYPE_LEFT_BRACKET) {
                 const contextToken = new ContextToken()
-                contextToken.children = this.analyse(true)
+                contextToken.children = this._analyse(true)
                 analyzedToken.push(contextToken)
                 continue
             }
@@ -136,7 +139,7 @@ class Analyst {
     }
 
     private getOperator() {
-         return this.getNext(TOKE_TYPE_OPERATOR)
+        return this.getNext(TOKE_TYPE_OPERATOR)
     }
 
     private getNumber() {

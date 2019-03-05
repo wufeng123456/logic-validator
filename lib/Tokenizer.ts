@@ -10,9 +10,14 @@ import {
 import UnknowTokenException from "./exception/UnknowTokenException";
 
 class Tokenizer {
+    private config: object = {}
     private tokens: string[] = []
     private start: number = 0
     private end: number = 0
+
+    constructor(config: object = {}) {
+        this.config = config
+    }
 
     public tokenize(input: string): Token[] {
         const serializedTokens = new Array<Token>()
@@ -38,13 +43,13 @@ class Tokenizer {
             }
 
             if (REG_OF_LEFT_BRACKET.test(token)) {
-                const leftBracketToken=new LeftBracketToken()
+                const leftBracketToken = new LeftBracketToken()
                 leftBracketToken.position = [this.start, this.end]
                 serializedTokens.push(leftBracketToken)
                 continue
             }
             if (REG_OF_RIGHT_BRACKET.test(token)) {
-                const rightBracketToken=new RightBracketToken()
+                const rightBracketToken = new RightBracketToken()
                 rightBracketToken.position = [this.start, this.end]
                 serializedTokens.push(rightBracketToken)
                 continue

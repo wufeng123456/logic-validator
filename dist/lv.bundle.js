@@ -161,10 +161,13 @@
     UnknowTokenException.prototype.constructor = UnknowTokenException;
 
     var Tokenizer = /** @class */ (function () {
-        function Tokenizer() {
+        function Tokenizer(config) {
+            if (config === void 0) { config = {}; }
+            this.config = {};
             this.tokens = [];
             this.start = 0;
             this.end = 0;
+            this.config = config;
         }
         Tokenizer.prototype.tokenize = function (input) {
             var serializedTokens = new Array();
@@ -286,11 +289,17 @@
         ],
         _b);
     var Analyst = /** @class */ (function () {
-        function Analyst(serializedTokens) {
+        function Analyst(config) {
+            if (config === void 0) { config = {}; }
             this.serializedTokens = [];
-            this.serializedTokens = serializedTokens.reverse();
+            this.config = {};
+            this.config = config;
         }
-        Analyst.prototype.analyse = function (isContext) {
+        Analyst.prototype.analyse = function (serializedTokens) {
+            this.serializedTokens = serializedTokens.reverse();
+            this._analyse();
+        };
+        Analyst.prototype._analyse = function (isContext) {
             if (isContext === void 0) { isContext = false; }
             var analyzedToken = [];
             while (this.serializedTokens.length) {
@@ -336,7 +345,7 @@
                 }
                 if (token.type === TOKE_TYPE_LEFT_BRACKET) {
                     var contextToken = new ContextToken();
-                    contextToken.children = this.analyse(true);
+                    contextToken.children = this._analyse(true);
                     analyzedToken.push(contextToken);
                     continue;
                 }
