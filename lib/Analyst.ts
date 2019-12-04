@@ -55,6 +55,7 @@ const ruleSymbolMap = {
 class Analyst {
     private serializedTokens: Token[] = []
     private config: object = {}
+    private bracketArr: Array<String> = []
 
     constructor(config: object = {}) {
         this.config = config
@@ -85,7 +86,10 @@ class Analyst {
             if (token.type === TOKE_TYPE_NUMBER) {
                 analyzedToken.push(token)
                 try {
-                    analyzedToken.push(this.getOperator()) && analyzedToken.push(this.getNumber())
+                    // analyzedToken.push(this.getOperator()) && analyzedToken.push(this.getNumber())
+                    (analyzedToken.push(this.getOperator()) && analyzedToken.push(this.getNumber()))
+                    ||
+                    (analyzedToken.push(this.getRightBracket()))
                 } catch (e) {
                     if (!(e instanceof NotAllowPositionException)) {
                         throw e
@@ -109,6 +113,7 @@ class Analyst {
             }
 
             if (token.type === TOKE_TYPE_LEFT_BRACKET) {
+                this.bracketArr.push(TOKE_TYPE_LEFT_BRACKET)
                 const contextToken = new ContextToken()
                 contextToken.children = this._analyse(true)
                 analyzedToken.push(contextToken)
@@ -116,7 +121,13 @@ class Analyst {
             }
 
             if (token.type === TOKE_TYPE_RIGHT_BRACKET) {
-                return analyzedToken
+                // return analyzedToken
+                if (this.bracketArr.length && this.bracketArr[this.bracketArr.length - 1] === TOKE_TYPE_LEFT_BRACKET) {
+                    this.bracketArr.pop()
+                    return analyzedToken
+                } else {
+                    throw new ContextNotEndException()
+                }
             }
             throw new UnknowTokenException(token)
         }
