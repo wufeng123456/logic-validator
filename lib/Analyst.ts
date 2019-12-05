@@ -3,6 +3,7 @@ import {
     TOKE_TYPE_LEFT_BRACKET,
     TOKE_TYPE_NUMBER,
     TOKE_TYPE_OPERATOR,
+    TOKE_TYPE_NOT,
     TOKE_TYPE_RIGHT_BRACKET,
     Token, TOKEN_TYPE_CONTEXT
 } from "./Token";
@@ -11,14 +12,16 @@ import NotAllowPositionException from "./exception/NotAllowpositionException";
 import ContextNotEndException from "./exception/ContextNotEndException";
 
 const allowBeginType = [
+    TOKE_TYPE_NOT,
     TOKE_TYPE_NUMBER,
     TOKE_TYPE_LEFT_BRACKET
 ]
 const allowBeginSymbol = [
-    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '('
+    'a', 'b', '(', '!'
 ]
 const ruleTypeMap = {
     [TOKE_TYPE_LEFT_BRACKET]: [
+        TOKE_TYPE_NOT,
         TOKE_TYPE_NUMBER,
         TOKE_TYPE_LEFT_BRACKET
     ],
@@ -26,7 +29,13 @@ const ruleTypeMap = {
         TOKE_TYPE_OPERATOR,
         TOKE_TYPE_RIGHT_BRACKET
     ],
+    [TOKE_TYPE_NOT]: [
+        TOKE_TYPE_NOT,
+        TOKE_TYPE_NUMBER,
+        TOKE_TYPE_LEFT_BRACKET
+    ],
     [TOKE_TYPE_OPERATOR]: [
+        TOKE_TYPE_NOT,
         TOKE_TYPE_NUMBER,
         TOKE_TYPE_LEFT_BRACKET
     ],
@@ -41,13 +50,16 @@ const ruleTypeMap = {
 }
 const ruleSymbolMap = {
     [TOKEN_TYPE_CONTEXT]: [
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 0
+        'a', 'b', '!'
     ],
     [TOKE_TYPE_NUMBER]: [
-        '|', '&'
+        '|', '&',
     ],
     [TOKE_TYPE_OPERATOR]: [
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 0
+        'a', 'b', '!'
+    ],
+    [TOKE_TYPE_NOT]: [
+        'a', 'b', '!'
     ]
 }
 
@@ -107,6 +119,26 @@ class Analyst {
                 }
                 continue
             }
+
+            if (token.type === TOKE_TYPE_NOT) {
+                analyzedToken.push(token)
+                try {
+                    // analyzedToken.push(this.getOperator()) && analyzedToken.push(this.getNumber())
+                    (analyzedToken.push(this.getNumber()))
+                } catch (e) {
+                    if (!(e instanceof NotAllowPositionException)) {
+                        throw e
+                    }
+                    try {
+                        this.getLeftBracket()
+                        break
+                    } catch (e) {
+                        throw e
+                    }
+                }
+                continue
+            }
+
             if (token.type === TOKE_TYPE_OPERATOR) {
                 analyzedToken.push(token)
                 continue
@@ -151,6 +183,10 @@ class Analyst {
 
     private getOperator() {
         return this.getNext(TOKE_TYPE_OPERATOR)
+    }
+
+    private getNot() {
+        return this.getNext(TOKE_TYPE_NOT)
     }
 
     private getNumber() {

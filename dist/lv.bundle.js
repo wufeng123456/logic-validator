@@ -37,11 +37,13 @@
     var TOKE_TYPE_OPERATOR = 'operator';
     var TOKE_TYPE_LEFT_BRACKET = 'left_bracket';
     var TOKE_TYPE_RIGHT_BRACKET = 'right_bracket';
+    var TOKE_TYPE_NOT = 'not';
     var TOKEN_TYPE_UNKNOW = 'unknow';
     var TOKEN_TYPE_CONTEXT = 'context';
-    var ALLOW_SYMBOL = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, '|', '&', '(', ')'];
-    var REG_OF_NUMBER = /[1234567890]/;
-    var REG_OF_OPERATOR = /[|&]/;
+    var ALLOW_SYMBOL = ['a', 'b', '|', '&', '(', ')'];
+    var REG_OF_NUMBER = /[ab]/;
+    var REG_OF_OPERATOR = /[&|]/;
+    var REG_OF_NOT = /[!]/;
     var REG_OF_LEFT_BRACKET = /\(/;
     var REG_OF_RIGHT_BRACKET = /\)/;
     var Token = /** @class */ (function () {
@@ -111,6 +113,16 @@
             return _this;
         }
         return OperatorToken;
+    }(Token));
+    var NotToken = /** @class */ (function (_super) {
+        __extends(NotToken, _super);
+        function NotToken(value) {
+            var _this = _super.call(this) || this;
+            _this.type = TOKE_TYPE_NOT;
+            _this.value = value;
+            return _this;
+        }
+        return NotToken;
     }(Token));
     var LeftBracketToken = /** @class */ (function (_super) {
         __extends(LeftBracketToken, _super);
@@ -189,6 +201,13 @@
                     serializedTokens.push(operatorToken);
                     continue;
                 }
+                if (REG_OF_NOT.test(token)) {
+                    var notToken = new NotToken(token);
+                    notToken.value += token + this.getNot();
+                    notToken.position = [this.start, this.end];
+                    serializedTokens.push(notToken);
+                    continue;
+                }
                 if (REG_OF_LEFT_BRACKET.test(token)) {
                     var leftBracketToken = new LeftBracketToken();
                     leftBracketToken.position = [this.start, this.end];
@@ -213,6 +232,21 @@
             while (this.tokens.length) {
                 var token = this.tokens.pop();
                 if (REG_OF_NUMBER.test(token)) {
+                    value += token;
+                    this.end += 1;
+                }
+                else {
+                    this.tokens.push(token);
+                    break;
+                }
+            }
+            return value;
+        };
+        Tokenizer.prototype.getNot = function () {
+            var value = '';
+            while (this.tokens.length) {
+                var token = this.tokens.pop();
+                if (REG_OF_NOT.test(token)) {
                     value += token;
                     this.end += 1;
                 }
@@ -249,14 +283,16 @@
 
     var _a, _b;
     var allowBeginType = [
+        TOKE_TYPE_NOT,
         TOKE_TYPE_NUMBER,
         TOKE_TYPE_LEFT_BRACKET
     ];
     var allowBeginSymbol = [
-        '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '('
+        'a', 'b', '(', '!'
     ];
     var ruleTypeMap = (_a = {},
         _a[TOKE_TYPE_LEFT_BRACKET] = [
+            TOKE_TYPE_NOT,
             TOKE_TYPE_NUMBER,
             TOKE_TYPE_LEFT_BRACKET
         ],
@@ -264,7 +300,13 @@
             TOKE_TYPE_OPERATOR,
             TOKE_TYPE_RIGHT_BRACKET
         ],
+        _a[TOKE_TYPE_NOT] = [
+            TOKE_TYPE_NOT,
+            TOKE_TYPE_NUMBER,
+            TOKE_TYPE_LEFT_BRACKET
+        ],
         _a[TOKE_TYPE_OPERATOR] = [
+            TOKE_TYPE_NOT,
             TOKE_TYPE_NUMBER,
             TOKE_TYPE_LEFT_BRACKET
         ],
@@ -279,13 +321,16 @@
         _a);
     var ruleSymbolMap = (_b = {},
         _b[TOKEN_TYPE_CONTEXT] = [
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 0
+            'a', 'b', '!'
         ],
         _b[TOKE_TYPE_NUMBER] = [
-            '|', '&'
+            '|', '&',
         ],
         _b[TOKE_TYPE_OPERATOR] = [
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 0
+            'a', 'b', '!'
+        ],
+        _b[TOKE_TYPE_NOT] = [
+            'a', 'b', '!'
         ],
         _b);
     var Analyst = /** @class */ (function () {
@@ -293,14 +338,17 @@
             if (config === void 0) { config = {}; }
             this.serializedTokens = [];
             this.config = {};
+            this.bracketArr = [];
             this.config = config;
         }
         Analyst.prototype.analyse = function (serializedTokens) {
             this.serializedTokens = serializedTokens.reverse();
-            this._analyse();
+            return this._analyse();
         };
         Analyst.prototype._analyse = function (isContext) {
             if (isContext === void 0) { isContext = false; }
+            if (!this.serializedTokens.length)
+                return [];
             var analyzedToken = [];
             while (this.serializedTokens.length) {
                 var token = this.serializedTokens.pop();
@@ -319,7 +367,10 @@
                 if (token.type === TOKE_TYPE_NUMBER) {
                     analyzedToken.push(token);
                     try {
-                        analyzedToken.push(this.getOperator()) && analyzedToken.push(this.getNumber());
+                        // analyzedToken.push(this.getOperator()) && analyzedToken.push(this.getNumber())
+                        (analyzedToken.push(this.getOperator()) && analyzedToken.push(this.getNumber()))
+                            ||
+                                (analyzedToken.push(this.getRightBracket()));
                     }
                     catch (e) {
                         if (!(e instanceof NotAllowPositionException)) {
@@ -339,18 +390,46 @@
                     }
                     continue;
                 }
+                if (token.type === TOKE_TYPE_NOT) {
+                    analyzedToken.push(token);
+                    try {
+                        // analyzedToken.push(this.getOperator()) && analyzedToken.push(this.getNumber())
+                        (analyzedToken.push(this.getNumber()));
+                    }
+                    catch (e) {
+                        if (!(e instanceof NotAllowPositionException)) {
+                            throw e;
+                        }
+                        try {
+                            this.getLeftBracket();
+                            break;
+                        }
+                        catch (e) {
+                            throw e;
+                        }
+                    }
+                    continue;
+                }
                 if (token.type === TOKE_TYPE_OPERATOR) {
                     analyzedToken.push(token);
                     continue;
                 }
                 if (token.type === TOKE_TYPE_LEFT_BRACKET) {
+                    this.bracketArr.push(TOKE_TYPE_LEFT_BRACKET);
                     var contextToken = new ContextToken();
                     contextToken.children = this._analyse(true);
                     analyzedToken.push(contextToken);
                     continue;
                 }
                 if (token.type === TOKE_TYPE_RIGHT_BRACKET) {
-                    return analyzedToken;
+                    // return analyzedToken
+                    if (this.bracketArr.length && this.bracketArr[this.bracketArr.length - 1] === TOKE_TYPE_LEFT_BRACKET) {
+                        this.bracketArr.pop();
+                        return analyzedToken;
+                    }
+                    else {
+                        throw new ContextNotEndException();
+                    }
                 }
                 throw new UnknowTokenException(token);
             }
@@ -372,6 +451,9 @@
         };
         Analyst.prototype.getOperator = function () {
             return this.getNext(TOKE_TYPE_OPERATOR);
+        };
+        Analyst.prototype.getNot = function () {
+            return this.getNext(TOKE_TYPE_NOT);
         };
         Analyst.prototype.getNumber = function () {
             return this.getNext(TOKE_TYPE_NUMBER);
@@ -395,11 +477,11 @@
     NotAllowEndException.prototype = Object.create(Error.prototype);
     NotAllowEndException.prototype.constructor = NotAllowEndException;
 
-    exports.Tokenizer = Tokenizer;
     exports.Analyst = Analyst;
     exports.ContextNotEndException = ContextNotEndException;
     exports.NotAllowEndException = NotAllowEndException;
     exports.NotAllowPositionException = NotAllowPositionException;
+    exports.Tokenizer = Tokenizer;
     exports.UnknowTokenException = UnknowTokenException;
 
     Object.defineProperty(exports, '__esModule', { value: true });

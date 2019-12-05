@@ -2,9 +2,11 @@ import {
     LeftBracketToken,
     NumberToken,
     OperatorToken,
+    NotToken,
     REG_OF_LEFT_BRACKET,
     REG_OF_NUMBER,
     REG_OF_OPERATOR, REG_OF_RIGHT_BRACKET, RightBracketToken,
+    REG_OF_NOT,
     Token
 } from "./Token";
 import UnknowTokenException from "./exception/UnknowTokenException";
@@ -42,6 +44,14 @@ class Tokenizer {
                 continue
             }
 
+            if (REG_OF_NOT.test(token)) {
+                const notToken = new NotToken(token)
+                notToken.value += token + this.getNot()
+                notToken.position = [this.start, this.end]
+                serializedTokens.push(notToken)
+                continue
+            }
+
             if (REG_OF_LEFT_BRACKET.test(token)) {
                 const leftBracketToken = new LeftBracketToken()
                 leftBracketToken.position = [this.start, this.end]
@@ -69,6 +79,20 @@ class Tokenizer {
         while (this.tokens.length) {
             const token = this.tokens.pop()
             if (REG_OF_NUMBER.test(token)) {
+                value += token
+                this.end += 1
+            } else {
+                this.tokens.push(token)
+                break
+            }
+        }
+        return value
+    }
+    private getNot() {
+        let value: string = ''
+        while (this.tokens.length) {
+            const token = this.tokens.pop()
+            if (REG_OF_NOT.test(token)) {
                 value += token
                 this.end += 1
             } else {
